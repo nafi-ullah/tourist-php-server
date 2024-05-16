@@ -19,21 +19,50 @@ $conn = $objDb->connect();
 $method = $_SERVER['REQUEST_METHOD'];
 switch($method) {
     case "GET":
-        $sql = "SELECT userid, username, fullname, profilepic, email, bio, countrylist FROM users";
+        //http://localhost/api/users/posts
+        //http://localhost/api/users/users
         $path = explode('/', $_SERVER['REQUEST_URI']);
-        if(isset($path[3]) && is_numeric($path[3])) {
-            $sql .= " WHERE userid = :userid";
-            $stmt = $conn->prepare($sql);
-            $stmt->bindParam(':userid', $path[3]);
-            $stmt->execute();
-            $users = $stmt->fetch(PDO::FETCH_ASSOC);
-        } else {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute();
-            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        $table = isset($path[3]) ? $path[3] : null;
+        
+        switch ($table) {
+            case "users":
+                $sql = "SELECT userid, username, fullname, profilepic, email, bio, countrylist FROM users";
+                if (isset($path[4]) && is_numeric($path[4])) {
+                    $sql .= " WHERE userid = :userid";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bindParam(':userid', $path[4]);
+                    $stmt->execute();
+                    $users = $stmt->fetch(PDO::FETCH_ASSOC);
+                } else {
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute();
+                    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
 
-        echo json_encode($users);
+                echo json_encode($users);
+                break;
+
+            case "posts":
+                $sql = "SELECT postid, userid, headline, country, caption, picture FROM posts";
+                if (isset($path[4]) && is_numeric($path[4])) {
+                    $sql .= " WHERE userid = :userid";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bindParam(':userid', $path[4]);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } else {
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+
+                echo json_encode($posts);
+                break;
+
+            default:
+                echo json_encode(['error' => 'Invalid table name']);
+                break;
+        }
         break;
 
     case "POST":
