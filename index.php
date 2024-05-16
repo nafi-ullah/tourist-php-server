@@ -58,6 +58,40 @@ switch($method) {
 
                 echo json_encode($posts);
                 break;
+            
+            case "posts":
+                $sql = "SELECT postid, userid, headline, country, caption, picture FROM posts";
+                if (isset($path[4]) && is_numeric($path[4])) {
+                    $sql .= " WHERE userid = :userid";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bindParam(':userid', $path[4]);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } else {
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+
+                echo json_encode($posts);
+                break;
+
+           case "comments":
+                $sql = "SELECT users.username, comments.commentid, comments.postid, comments.comment, comments.timestamp FROM comments INNER JOIN users ON comments.userid = users.userid";
+                if (isset($path[4]) && is_numeric($path[4])) {
+                    $sql .= " WHERE comments.postid = :postid";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bindParam(':postid', $path[4]);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } else {
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute();
+                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+
+                echo json_encode($posts);
+                break;
 
             default:
                 echo json_encode(['error' => 'Invalid table name']);
@@ -153,9 +187,24 @@ switch($method) {
             $response = ['status' => 0, 'message' => 'Failed to create record.'];
         }
         echo json_encode($response);
+
+
+    }else if($data->table == "comments"){
+       
+        $sql = "INSERT INTO comments( postid, userid, comment) VALUES(:postid, :userid, :comment)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':postid', $data->postid);
+        $stmt->bindParam(':userid', $data->userid);
+        $stmt->bindParam(':comment', $data->comment);
+       
+
+        if($stmt->execute()) {
+            $response = ['status' => 1, 'message' => 'Comment created successfully.'];
+        } else {
+            $response = ['status' => 0, 'message' => 'Failed to create record.'];
+        }
+        echo json_encode($response);
     }
-
-
 
         break;
 
@@ -212,6 +261,22 @@ switch($method) {
                 }
                 echo json_encode($response);
                 break;
+//------------------------------------------comments------------------------------------------------------
+            case "comments":
+                $post = json_decode(file_get_contents('php://input'));
+                $sql = "UPDATE comments SET comment = :comment  WHERE commentid = :commentid";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':commentid', $path[4]);
+                $stmt->bindParam(':comment', $post->comment);
+           
+
+                if ($stmt->execute()) {
+                    $response = ['status' => 1, 'message' => 'Comment updated successfully.'];
+                } else {
+                    $response = ['status' => 0, 'message' => 'Failed to update post.'];
+                }
+                echo json_encode($response);
+                break;
 
             default:
                 echo json_encode(['error' => 'Invalid table name']);
@@ -246,6 +311,20 @@ switch($method) {
         $sql = "DELETE FROM posts WHERE postid = :postid";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':postid', $path[4]);
+
+        if ($stmt->execute()) {
+            $response = ['status' => 1, 'message' => 'Post deleted successfully.'];
+        } else {
+            $response = ['status' => 0, 'message' => 'Failed to delete post.'];
+        }
+        echo json_encode($response);
+        break;
+    
+    
+    case "comments":
+        $sql = "DELETE FROM comments WHERE commentid = :commentid";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':commentid', $path[4]);
 
         if ($stmt->execute()) {
             $response = ['status' => 1, 'message' => 'Post deleted successfully.'];
