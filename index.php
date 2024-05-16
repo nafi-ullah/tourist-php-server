@@ -161,67 +161,112 @@ switch($method) {
 
     case "PUT":
         // Update operation
-        $user = json_decode( file_get_contents('php://input') );
-        if($user->table == "users"){
-
-        $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic, email = :email, password = :password, bio = :bio, countrylist = :countrylist WHERE userid = :userid";
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':userid', $user->userid);
-        $stmt->bindParam(':username', $user->username);
-        $stmt->bindParam(':fullname', $user->fullname);
-        $stmt->bindParam(':profilepic', $user->profilepic);
-        $stmt->bindParam(':email', $user->email);
-        $stmt->bindParam(':password', $user->password);
-        $stmt->bindParam(':bio', $user->bio);
-        $stmt->bindParam(':countrylist', $user->countrylist);
        
 
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record updated successfully.'];
-        } else {
-            $response = ['status' => 0, 'message' => 'Failed to update record.'];
+        $path = explode('/', $_SERVER['REQUEST_URI']);
+        $table = isset($path[3]) ? $path[3] : null;
+
+        switch ($table) {
+            case "users":
+             
+                $user = json_decode( file_get_contents('php://input') );
+      
+
+                $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic, email = :email, password = :password, bio = :bio, countrylist = :countrylist WHERE userid = :userid";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':userid', $user->userid);
+                $stmt->bindParam(':username', $user->username);
+                $stmt->bindParam(':fullname', $user->fullname);
+                $stmt->bindParam(':profilepic', $user->profilepic);
+                $stmt->bindParam(':email', $user->email);
+                $stmt->bindParam(':password', $user->password);
+                $stmt->bindParam(':bio', $user->bio);
+                $stmt->bindParam(':countrylist', $user->countrylist);
+               
+        
+                if($stmt->execute()) {
+                    $response = ['status' => 1, 'message' => 'Record updated successfully.'];
+                } else {
+                    $response = ['status' => 0, 'message' => 'Failed to update record.'];
+                }
+                echo json_encode($response);
+
+
+                break;
+    //-------------------------------------posts tables put--------------------------------------------
+
+            case "posts":
+                $post = json_decode(file_get_contents('php://input'));
+                $sql = "UPDATE posts SET headline = :headline, country = :country, caption = :caption, picture = :picture WHERE postid = :postid";
+                $stmt = $conn->prepare($sql);
+                $stmt->bindParam(':postid', $path[4]);
+                $stmt->bindParam(':headline', $post->headline);
+                $stmt->bindParam(':country', $post->country);
+                $stmt->bindParam(':caption', $post->caption);
+                $stmt->bindParam(':picture', $post->picture);
+
+                if ($stmt->execute()) {
+                    $response = ['status' => 1, 'message' => 'Post updated successfully.'];
+                } else {
+                    $response = ['status' => 0, 'message' => 'Failed to update post.'];
+                }
+                echo json_encode($response);
+                break;
+
+            default:
+                echo json_encode(['error' => 'Invalid table name']);
+                break;
         }
+
+
+        break;
+
+    case "DELETE":
+        
+        $path = explode('/', $_SERVER['REQUEST_URI']);
+        $table = isset($path[3]) ? $path[3] : null;        
+
+        switch ($table) {
+            case "users":
+        // Handle deleting user information
+               $sql = "DELETE FROM users WHERE userid = :userid";
+
+            $stmt = $conn->prepare($sql);
+             $stmt->bindParam(':userid', $path[4]);
+
+           if($stmt->execute()) {
+                $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
+           } else {
+                 $response = ['status' => 0, 'message' => 'Failed to delete record.'];
+          }
         echo json_encode($response);
+        break;
 
-//-------------------------------------posts tables put--------------------------------------------
-
-    }else if($user->table == "posts"){
-        $sql = "UPDATE posts SET userid = :userid, headline = :headline, country = :country, caption = :caption, picture = :picture WHERE id = :id";
+    case "posts":
+        $sql = "DELETE FROM posts WHERE postid = :postid";
         $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':id', $user->id);
-        $stmt->bindParam(':userid', $user->userid);
-        $stmt->bindParam(':headline', $user->headline);
-        $stmt->bindParam(':country', $user->country);
-        $stmt->bindParam(':caption', $user->caption);
-        $stmt->bindParam(':picture', $user->picture);
+        $stmt->bindParam(':postid', $path[4]);
 
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record updated successfully.'];
+        if ($stmt->execute()) {
+            $response = ['status' => 1, 'message' => 'Post deleted successfully.'];
         } else {
-            $response = ['status' => 0, 'message' => 'Failed to update record.'];
+            $response = ['status' => 0, 'message' => 'Failed to delete post.'];
         }
         echo json_encode($response);
+        break;
 
-    }
+    default:
+        echo json_encode(['error' => 'Invalid table name']);
+        break;
+}
 
 
 
 
         break;
 
-    case "DELETE":
-        // Delete operation
-        $sql = "DELETE FROM users WHERE userid = :userid";
-        $path = explode('/', $_SERVER['REQUEST_URI']);
 
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':userid', $path[3]);
-
-        if($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
-        } else {
-            $response = ['status' => 0, 'message' => 'Failed to delete record.'];
-        }
-        echo json_encode($response);
+        default:
+        echo json_encode(['error' => 'Invalid request method']);
         break;
 }
