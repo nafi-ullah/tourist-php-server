@@ -38,6 +38,10 @@ switch($method) {
 
     case "POST":
         $data = json_decode( file_get_contents('php://input') );
+
+        if($data->table == "users"){
+
+
         if ($data->action == "login") {
             $email = $data->email;
             $password = $data->password;
@@ -102,11 +106,35 @@ switch($method) {
             http_response_code(400);
             echo json_encode(array("message" => "Invalid action."));
         }
+        //------------------------------posts tables post------------------------------------------------------------
+
+    }else if($data->table == "posts"){
+       
+        $sql = "INSERT INTO posts(userid, headline, country, caption, picture) VALUES(:userid, :headline, :country, :caption, :picture)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':userid', $data->userid);
+        $stmt->bindParam(':headline', $data->headline);
+        $stmt->bindParam(':country', $data->country);
+        $stmt->bindParam(':caption', $data->caption);
+        $stmt->bindParam(':picture', $data->picture);
+
+        if($stmt->execute()) {
+            $response = ['status' => 1, 'message' => 'Record created successfully.'];
+        } else {
+            $response = ['status' => 0, 'message' => 'Failed to create record.'];
+        }
+        echo json_encode($response);
+    }
+
+
+
         break;
 
     case "PUT":
         // Update operation
         $user = json_decode( file_get_contents('php://input') );
+        if($user->table == "users"){
+
         $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic, email = :email, password = :password, bio = :bio, countrylist = :countrylist WHERE userid = :userid";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':userid', $user->userid);
@@ -125,6 +153,31 @@ switch($method) {
             $response = ['status' => 0, 'message' => 'Failed to update record.'];
         }
         echo json_encode($response);
+
+//-------------------------------------posts tables put--------------------------------------------
+
+    }else if($user->table == "posts"){
+        $sql = "UPDATE posts SET userid = :userid, headline = :headline, country = :country, caption = :caption, picture = :picture WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $user->id);
+        $stmt->bindParam(':userid', $user->userid);
+        $stmt->bindParam(':headline', $user->headline);
+        $stmt->bindParam(':country', $user->country);
+        $stmt->bindParam(':caption', $user->caption);
+        $stmt->bindParam(':picture', $user->picture);
+
+        if($stmt->execute()) {
+            $response = ['status' => 1, 'message' => 'Record updated successfully.'];
+        } else {
+            $response = ['status' => 0, 'message' => 'Failed to update record.'];
+        }
+        echo json_encode($response);
+
+    }
+
+
+
+
         break;
 
     case "DELETE":
