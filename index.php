@@ -237,7 +237,7 @@ switch($method) {
             case "users":
              
                 $user = json_decode( file_get_contents('php://input') );
-      
+                $mypassword = password_hash($user->password, PASSWORD_BCRYPT);
 
                 $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic,coverpic = :coverpic, email = :email, password = :password, bio = :bio WHERE userid = :userid";
                 $stmt = $conn->prepare($sql);
@@ -246,7 +246,8 @@ switch($method) {
                 $stmt->bindParam(':fullname', $user->fullname);
                 $stmt->bindParam(':profilepic', $user->profilepic);
                 $stmt->bindParam(':email', $user->email);
-                $stmt->bindParam(':password', $user->password);
+               
+                $stmt->bindParam(':password', $mypassword);
                 $stmt->bindParam(':bio', $user->bio);
                 $stmt->bindParam(':coverpic', $user->coverpic);
                
