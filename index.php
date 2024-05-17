@@ -43,7 +43,25 @@ switch($method) {
                 break;
 
             case "posts":
-                $sql = "SELECT postid, userid, headline, country, caption, picture FROM posts";
+                $sql = "
+                SELECT 
+                    posts.postid, 
+                    posts.userid, 
+                    posts.headline, 
+                    posts.country, 
+                    posts.caption, 
+                    posts.picture, 
+                    posts.timestamp, 
+                    users.profilepic, 
+                    users.fullname, 
+                    users.username, 
+                    (SELECT COUNT(*) FROM comments WHERE comments.postid = posts.postid) AS comment_count
+                FROM 
+                    posts 
+                INNER JOIN 
+                    users ON posts.userid = users.userid
+                ORDER BY posts.postid DESC
+            ";
                 if (isset($path[4]) && is_numeric($path[4])) {
                     $sql .= " WHERE userid = :userid";
                     $stmt = $conn->prepare($sql);
@@ -221,7 +239,7 @@ switch($method) {
                 $user = json_decode( file_get_contents('php://input') );
       
 
-                $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic, email = :email, password = :password, bio = :bio, countrylist = :countrylist WHERE userid = :userid";
+                $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic,coverpic = :coverpic, email = :email, password = :password, bio = :bio WHERE userid = :userid";
                 $stmt = $conn->prepare($sql);
                 $stmt->bindParam(':userid', $user->userid);
                 $stmt->bindParam(':username', $user->username);
@@ -230,7 +248,7 @@ switch($method) {
                 $stmt->bindParam(':email', $user->email);
                 $stmt->bindParam(':password', $user->password);
                 $stmt->bindParam(':bio', $user->bio);
-                $stmt->bindParam(':countrylist', $user->countrylist);
+                $stmt->bindParam(':coverpic', $user->coverpic);
                
         
                 if($stmt->execute()) {
