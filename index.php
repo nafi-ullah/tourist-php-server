@@ -26,7 +26,7 @@ switch($method) {
         
         switch ($table) {
             case "users":
-                $sql = "SELECT userid, username, fullname, profilepic, email, bio, countrylist FROM users";
+                $sql = "SELECT userid, username, fullname, profilepic, email, bio,coverpic  FROM users";
                 if (isset($path[4]) && is_numeric($path[4])) {
                     $sql .= " WHERE userid = :userid";
                     $stmt = $conn->prepare($sql);
@@ -43,56 +43,90 @@ switch($method) {
                 break;
 
             case "posts":
-                $sql = "
-                SELECT 
-                    posts.postid, 
-                    posts.userid, 
-                    posts.headline, 
-                    posts.country, 
-                    posts.caption, 
-                    posts.picture, 
-                    posts.timestamp, 
-                    users.profilepic, 
-                    users.fullname, 
-                    users.username, 
-                    (SELECT COUNT(*) FROM comments WHERE comments.postid = posts.postid) AS comment_count
-                FROM 
-                    posts 
-                INNER JOIN 
-                    users ON posts.userid = users.userid
-                ORDER BY posts.postid DESC
-            ";
-                if (isset($path[4]) && is_numeric($path[4])) {
-                    $sql .= " WHERE userid = :userid";
+                if (isset($path[4]) && $path[4] == 'induser') {
+                    // Fetch posts for a specific user
+                    $sql = "
+                    SELECT 
+                        posts.postid, 
+                        posts.userid, 
+                        posts.headline, 
+                        posts.country, 
+                        posts.caption, 
+                        posts.picture, 
+                        posts.timestamp, 
+                        users.profilepic, 
+                        users.fullname, 
+                        users.username, 
+                        (SELECT COUNT(*) FROM comments WHERE comments.postid = posts.postid) AS comment_count
+                    FROM 
+                        posts 
+                    INNER JOIN 
+                        users ON posts.userid = users.userid
+                    WHERE 
+                        posts.userid = :userid
+                    ";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bindParam(':userid', $path[4]);
+                    $stmt->bindParam(':userid', $path[5]);
                     $stmt->execute();
                     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } elseif (isset($path[4]) && $path[4]=='indpost') {
+                    // Fetch a specific post by post ID
+
+                    $sql = "
+                    SELECT 
+                        posts.postid, 
+                        posts.userid, 
+                        posts.headline, 
+                        posts.country, 
+                        posts.caption, 
+                        posts.picture, 
+                        posts.timestamp, 
+                        users.profilepic, 
+                        users.fullname, 
+                        users.username, 
+                        (SELECT COUNT(*) FROM comments WHERE comments.postid = posts.postid) AS comment_count
+                    FROM 
+                        posts 
+                    INNER JOIN 
+                        users ON posts.userid = users.userid
+                    WHERE 
+                        posts.postid = :postid
+                    ";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->bindParam(':postid', $path[5]);
+                    $stmt->execute();
+                    $posts = $stmt->fetch(PDO::FETCH_ASSOC);
                 } else {
+                    // Fetch all posts
+                    $sql = "
+                    SELECT 
+                        posts.postid, 
+                        posts.userid, 
+                        posts.headline, 
+                        posts.country, 
+                        posts.caption, 
+                        posts.picture, 
+                        posts.timestamp, 
+                        users.profilepic, 
+                        users.fullname, 
+                        users.username, 
+                        (SELECT COUNT(*) FROM comments WHERE comments.postid = posts.postid) AS comment_count
+                    FROM 
+                        posts 
+                    INNER JOIN 
+                        users ON posts.userid = users.userid
+                    ORDER BY 
+                        posts.postid DESC
+                    ";
                     $stmt = $conn->prepare($sql);
                     $stmt->execute();
                     $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 }
-
+    
                 echo json_encode($posts);
                 break;
             
-            case "posts":
-                $sql = "SELECT postid, userid, headline, country, caption, picture FROM posts";
-                if (isset($path[4]) && is_numeric($path[4])) {
-                    $sql .= " WHERE userid = :userid";
-                    $stmt = $conn->prepare($sql);
-                    $stmt->bindParam(':userid', $path[4]);
-                    $stmt->execute();
-                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                } else {
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute();
-                    $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                }
-
-                echo json_encode($posts);
-                break;
+         
 
            case "comments":
                 $sql = "SELECT users.username, comments.commentid, comments.postid, comments.comment, comments.timestamp FROM comments INNER JOIN users ON comments.userid = users.userid";
@@ -237,17 +271,15 @@ switch($method) {
             case "users":
              
                 $user = json_decode( file_get_contents('php://input') );
-                $mypassword = password_hash($user->password, PASSWORD_BCRYPT);
 
-                $sql = "UPDATE users SET username = :username, fullname = :fullname, profilepic = :profilepic,coverpic = :coverpic, email = :email, password = :password, bio = :bio WHERE userid = :userid";
+                $sql = "UPDATE users SET fullname = :fullname, profilepic = :profilepic,coverpic = :coverpic, email = :email, bio = :bio WHERE userid = :userid";
                 $stmt = $conn->prepare($sql);
                 $stmt->bindParam(':userid', $user->userid);
-                $stmt->bindParam(':username', $user->username);
                 $stmt->bindParam(':fullname', $user->fullname);
                 $stmt->bindParam(':profilepic', $user->profilepic);
                 $stmt->bindParam(':email', $user->email);
                
-                $stmt->bindParam(':password', $mypassword);
+             
                 $stmt->bindParam(':bio', $user->bio);
                 $stmt->bindParam(':coverpic', $user->coverpic);
                
