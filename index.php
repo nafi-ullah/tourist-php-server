@@ -64,6 +64,8 @@ switch($method) {
                         users ON posts.userid = users.userid
                     WHERE 
                         posts.userid = :userid
+                    ORDER BY 
+                        posts.postid DESC
                     ";
                     $stmt = $conn->prepare($sql);
                     $stmt->bindParam(':userid', $path[5]);
@@ -129,9 +131,9 @@ switch($method) {
          
 
            case "comments":
-                $sql = "SELECT users.username, comments.commentid, comments.postid, comments.comment, comments.timestamp FROM comments INNER JOIN users ON comments.userid = users.userid";
+                $sql = "SELECT users.fullname, users.profilepic, comments.commentid, comments.postid, comments.comment, comments.timestamp FROM comments INNER JOIN users ON comments.userid = users.userid ";
                 if (isset($path[4]) && is_numeric($path[4])) {
-                    $sql .= " WHERE comments.postid = :postid";
+                    $sql .= " WHERE comments.postid = :postid ORDER BY comments.commentid DESC";
                     $stmt = $conn->prepare($sql);
                     $stmt->bindParam(':postid', $path[4]);
                     $stmt->execute();
